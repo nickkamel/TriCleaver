@@ -3,6 +3,7 @@ from repr import SRS, SCC
 from utility import multicore, search_list_objs, non_dominated_sort, space_out_items
 from semantics import *
 from math import ceil
+import csv
 
 class TriCleaver(EA):
     def __init__(self, dot_dir, viability_params, bool_fast_folding, folding_temp, downstream_seq, num_repeats_wt, num_repeats_mutant, repeat_unit, template_params):
@@ -178,9 +179,9 @@ class TriCleaver(EA):
     def post_process(self):
         #Acceptable
         acceptable_pool = list()
-        for ind in pool:
-            if ind.potential_fitnesses['switchMin'] >= -1: #!!!! Debugging !!!!!!
-            #if ind.potential_fitnesses['switchMin'] >= 0.85:
+        for ind in self.population:
+            #if ind.potential_fitnesses['switchMin'] >= -1: #!!!! Debugging !!!!!!
+            if ind.potential_fitnesses['switchMin'] >= 0.85:
                 ind.potential_fitnesses['acceptable'] = 1
                 acceptable_pool.append(ind)
             else:
@@ -188,7 +189,7 @@ class TriCleaver(EA):
 
         #Marginal diversity gain(MDG)
         #Handle unacceptable individuals
-        for ind in pool:
+        for ind in self.population:
             if ind.potential_fitnesses['acceptable'] == 0:               
                 ind.potential_fitnesses['mdg']        = -len(acceptable_pool) #This is effectively -inf
 
@@ -234,7 +235,7 @@ class TriCleaver(EA):
         for ind_idx, ind in enumerate(inds_ranked):
             rows.append([ind_idx] + [ind.strands[0]])
 
-        with open('designs/Srz_designs_' + self.func_name + '.csv','w') as out:
+        with open('designs/Srz_designs_.csv','w') as out:
             csv_out=csv.writer(out)
             csv_out.writerow(header)
             csv_out.writerows(rows)

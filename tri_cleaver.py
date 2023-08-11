@@ -119,7 +119,6 @@ if __name__ == '__main__':
     viability_params    = [-1.00, 0.90, 1,  0.20, 49]
     num_inds            = 300 #600
     num_gens            = 200
-    num_gens = 13 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     mutation_rate       = 6
     mutation_probs      = [0.85, 0.15]
     selected_fitnesses  = ['noveltyCut', 'ONCut', 'OFFCut', 'mismatchCut']
