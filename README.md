@@ -21,7 +21,7 @@ TriCleaver is a multi-objective evolutionary algorithm that designs switchable r
 - The number of mutant repeats must be greater than the number of wild-type repeats.
 - Run the script with the following command:
 
-`python tri_cleaver.py --wt_file=[WILD_TYPE_FILE_NAME.txt] --mutant_file=[WILD_TYPE_FILE_NAME.txt]`
+`python tri_cleaver.py --wt_file=[WILD_TYPE_FILE_NAME.txt] --mutant_file=[MUTANT_FILE_NAME.txt]`
 
 For example
 
