@@ -6,11 +6,10 @@ from math import ceil
 import csv
 
 class TriCleaver(EA):
-    def __init__(self, dot_dir, viability_params, bool_fast_folding, folding_temp, downstream_seq, num_repeats_wt, num_repeats_mutant, repeat_unit, template_params):
+    def __init__(self, viability_params, bool_fast_folding, folding_temp, downstream_seq, num_repeats_wt, num_repeats_mutant, repeat_unit, template_params):
         EA.__init__(self)       
-        self.mutation_types = ['BBP', 'SBS']      
+        self.mutation_types = ['BBP', 'SBS']  #!!! changes this to: self.mutation_types = ['BCC', 'RzBS']     
 
-        self.dot_dir  = dot_dir
         self.bool_fast_folding   = bool_fast_folding
         self.folding_temp        = folding_temp
         self.bool_TT             = 1 #Hardcoded
@@ -18,13 +17,19 @@ class TriCleaver(EA):
         self.min_cap, self.max_cap, self.bool_knee, self.knee_cap, self.knee_gen = viability_params
 
         self.spacing, self.spacing_length, self.s1_len, self.s3_len, self.sbs_len, max_num_strides, allowed_cut_site_types = template_params
-        self.sbs_len = self.s1_len + 1 + self.s3_len
+        self.s2_len = 7 #!!! Hardcoded. TO DO: Specify this in template params Server side
+        self.linker_len = 7 #!!! Hardcoded
+        self.rzbs_len = self.s1_len + 1 + self.s3_len
+        self.rzbs_extension_len = 10 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.misc_lens = self.s1_len, self.s2_len, self.s3_len, self.linker_len, self.rzbs_len, self.rzbs_extension_len
+
 
         self.wt_len = num_repeats_wt*3
         self.stride_size = ceil( (num_repeats_mutant - num_repeats_wt) / float(max_num_strides)    )*3
-        repeats = repeat_unit*num_repeats_mutant
+        self.repeats = repeat_unit*num_repeats_mutant
 
         #Build the list of allowed substrate binding sites
+        #rs is the index of the cut site w.r.t. to the start of the sequence downstream of the repeats
         self.downstream_seq = downstream_seq
         self.allowed_rs = list()
         for i in range( len(self.downstream_seq) - self.sbs_len ):
@@ -32,43 +37,18 @@ class TriCleaver(EA):
             if cut_site in allowed_cut_site_types:
             #if self.downstream_seq[i + self.s3_len - 1] == 'U' and self.downstream_seq[i + self.s3_len] != 'G': #NUH
                 self.allowed_rs.append(i)
-        rev_repeats    = repeats[::-1]
 
-        #We don't specify any constraints here for stem1, core3 and stem3. The arm constraints will be added during the UpdateSBS routine
-        self.template    = [None]*9
-        self.template[0] = SCC('s1' , 2  , []                                    , self.s1_len , (0, 1) , (0, 2) , ('#e6194b', '#808000'), (0, self.s1_len)  )
-        self.template[1] = SCC('C1' , 1, ['C', 'U', 'G', 'A', 'U', 'G', 'A']   , 7 , (0,)   , (1,)   , ('#3cb44b',)          , None    )
-        self.template[2] = SCC('s2' , 2  , [('G', 'C')]                          , 7 , (0, 0) , (2, 6) , ('#ffe119', '#008080'), None    )
-        self.template[3] = SCC('L0', 1, []                                    , 7 , (0,)   , (3,)   , ('#4363d8',)          , None    )
-        self.template[4] = SCC('OBS'   , 2  , [('N', base) for base in rev_repeats], len(rev_repeats), (0, 2) , (4, 0) , ('#f58231',  None    ), None )             
-        self.template[5] = SCC('L1', 1, []                                    , 7 , (0,)   , (5,)   , ('#911eb4',)          , None    )
-        self.template[6] = SCC('C2' , 1, ['G', 'A', 'A']                       , 3 , (0,)   , (7,)   , ('#e6beff',)          , None    )
-        self.template[7] = SCC('s3' , 2  , []                                    , self.s3_len , (0, 1) , (8, 0) , ('#FFFFFF', '#800000'), (self.s1_len + 1, self.sbs_len) )
-        self.template[8] = SCC('C3' , 1, []                                    , 1 , (1,)   , (1,)   , ('#aaffc3',)          , (self.s1_len, self.s1_len + 1)  )
-        
-
-        #Hardcode mismatch locations on obs to give ribozyme some flexiblity when bound transcript 
-        obs_len = len(repeats)
-        self.obs_mismatches = list()
+        #Hardcode mismatch locations on sensor to give ribozyme some flexiblity when bound transcript 
+        sensor_len = len(self.repeats)
+        self.sensor_mismatches = list()
         for i in range(self.spacing_length):
-            self.obs_mismatches += space_out_items(i, self.spacing, obs_len)
+            self.sensor_mismatches += space_out_items(i, self.spacing, sensor_len)
 
     def create_individual(self):
         ind                = SRS()
-        ind.sccs           = copy.deepcopy(self.template)      
-        ind.rs             = np.random.choice(self.allowed_rs)            
-        obs_scc            = ind.sccs[4] #Hard coded
-        obs_scc.mismatches = copy.deepcopy(self.obs_mismatches)
-
-        rev_arm_top      = self.downstream_seq[ind.rs:ind.rs + self.sbs_len][::-1] 
-        for scc in ind.sccs:
-            scc.update_constraints(rev_arm_top) #Passing this as a parameter is ugly, but so is storing it inside every gen object
-            scc.update_allowed() #This will also sample the bccs since the empty bcc will violate the allowed length constraint         
-    
-        ind.update_mutation_maps(['bccs'])
-        ind.update_mutation_prob()
-
-        ind.arm_gen_ids = [i for i, gen in enumerate(ind.sccs) if gen.seg_lims_arm != None] #SBS mutation function needs this
+        ind.rs             = np.random.choice(self.allowed_rs)
+        ind.update_representation(self.downstream_seq, self.sensor_mismatches, self.repeats, self.misc_lens, 1)
+   
         return ind
 
     def copy_ind(self, ind):
@@ -79,7 +59,7 @@ class TriCleaver(EA):
         new_inds = list()
         for ind in inds:
             new_ind = ind
-            new_ind.fold_constraints     = [task[1] for task in ind.tasks[0]]
+            new_ind.folding_constraints     = [task[1] for task in ind.tasks[0]]
             new_inds.append(new_ind)
         return new_inds
 
@@ -101,16 +81,15 @@ class TriCleaver(EA):
             ind.update_base_maps()
             ind.build_color_string()
             ind.generate_folding_tasks(self.wt_len, self.stride_size)
-            #batch += ind.tasks
-            batch.append(ind.tasks) #!!!
+            batch.append(ind.tasks) 
 
-        #Since all individuals have the same template, base_to_seg, name_to_bases, and er_seg_ids are the same for all individuals so we just take the ones from the last individual. Also note that unlike TS we do not specify a truth vector. Rather, the truth vector is determined by the number wt_len, obs_len and num_strides. For now, the truth vector is determined for individual when the folding tasks are generated. Therefore TC has ind.truth_vector instead of self.truth_vector
-        common_data = (ind.base_to_seg, ind.name_to_bases, ind.er_seg_ids, self.dot_dir, ind.truth_vector, bool_300, self.folding_temp, self.bool_TT, ind.sccs[4].mismatches)
+        #Since all individuals have the same template, base_to_seg, name_to_bases, and er_seg_ids are the same for all individuals so we just take the ones from the last individual. Also note that unlike TS we do not specify a truth vector. Rather, the truth vector is determined by the number wt_len, sensor_len and num_strides. For now, the truth vector is determined for individual when the folding tasks are generated. Therefore TC has ind.truth_vector instead of self.truth_vector
+        common_data = (ind.base_to_seg, ind.name_to_bases, ind.er_seg_ids, ind.truth_vector, bool_300, self.folding_temp, self.bool_TT, ind.sccs[4].mismatches)
 
-        num_processes               = 12 #16
+        num_processes              = 12 #16
         self.num_processes_novelty = num_processes
-        #results                    = multicore(batch, pheno_perf_fits, num_processes, common_data)
-        results                   = pheno_perf_fits([batch, common_data]) #Single core
+        results                    = multicore(batch, pheno_perf_fits, num_processes, common_data)
+        #results                   = pheno_perf_fits([batch, common_data]) #Single core
 
 
         #Store results back in individuals and prepare distance calculation
@@ -122,7 +101,7 @@ class TriCleaver(EA):
             ind.mfe_dbs             = result[2]
 
         #Novelty
-        #print("Starting novelty")        
+        print("Starting novelty")        
         novelty_pool    = population_full + self.offspring
         num_inds        = len(novelty_pool)
         distance_matrix = self.calculate_distance_matrix(novelty_pool)  
@@ -148,7 +127,7 @@ class TriCleaver(EA):
         #print(self.cur_viability_threshold)     
         
         pool = self.population + self.offspring
-        pfNames = list(ind.potential_fitnesses.keys()) #Python 3
+        pfNames = list(ind.potential_fitnesses.keys())
         for ind in pool:
             for pfName in pfNames:
                 if 'Cut' not in pfName: #Without this condition, we end up with nameCutCutCut ... Cut
@@ -249,12 +228,7 @@ class TriCleaver(EA):
             if mutation_type == 'SBS':
                 options   = [i for i in self.allowed_rs if i != ind.rs]
                 ind.rs    = np.random.choice(options)
-                rev_arm_top = self.downstream_seq[ind.rs:ind.rs + self.sbs_len][::-1]
-                for id in ind.arm_gen_ids: #Update the sccs that are affected by the new binding site
-                    scc   = ind.sccs[id]
-                    scc.update_constraints(rev_arm_top)
-                    scc.update_allowed()
-                ind.update_mutation_prob() #By changing the binding site, we change the constraints on the arm which in turn changes the mutation weights
+                ind.update_representation(self.downstream_seq, self.sensor_mismatches, self.repeats, self.misc_lens, 1)
             else:
                 #Randomly select a (global) index of a bcc. Use the bcc_to_scc map to get the scc containing that bcc and the bcc's relative position within that scc
                 num_bccs_total       = len (ind.bcc_to_scc.keys() )
@@ -262,7 +236,7 @@ class TriCleaver(EA):
                 (scc_id, bcc_id_scc) = ind.bcc_to_scc[bcc_id_all] 
                 scc                  = ind.sccs[scc_id]
                 bcc                  = scc.bccs[bcc_id_scc]
-                options              = [i for i in scc.allowed[bcc_id_scc] if i != bcc] #Every bcc but the current one                                 
-                scc.bccs[bcc_id_scc] = np.random.choice(options)    
+                options              = [i for i in scc.valid_nucs[bcc_id_scc] if i != bcc] #Every bcc but the current one      
+                scc.bccs[bcc_id_scc] = np.random.choice(options)     
 
                 

@@ -100,7 +100,7 @@ def process_input_seqs(wt_seq, mutant_seq, s1_len, s3_len):
     num_cut_sites = 0
     for i in range( len(downstream_seq) - sbs_len ):
         cut_site = downstream_seq[i + s3_len - 2:i + s3_len + 1]
-        if cut_site[1] == 'U' and cut_site[2] == "G": #NUH
+        if cut_site[1] == 'U' and cut_site[2] != "G": #NUH
             num_cut_sites += 1
             if cut_site not in cut_site_counts.keys():
                 cut_site_counts[cut_site] = 0
@@ -144,8 +144,8 @@ if __name__ == '__main__':
 
     template_params = (spacing, spacing_length, s1_len, s3_len, sbs_len, max_num_strides, allowed_cut_site_types)
 
-    bool_fast_folding, dot_dir = 1, 1 #dot_dir is vestigial
-    job = TriCleaver(dot_dir, viability_params, bool_fast_folding, args.folding_temperature, downstream_seq, num_repeats_wt, num_repeats_mutant, repeat_unit, template_params)
+    bool_fast_folding = 1
+    job = TriCleaver(viability_params, bool_fast_folding, args.folding_temperature, downstream_seq, num_repeats_wt, num_repeats_mutant, repeat_unit, template_params)
 
     print("Generating selective ribozymes")
     job.run(num_inds=num_inds, num_gens=num_gens, mutation_rate=mutation_rate, mutation_probs=mutation_probs, selected_fitnesses=selected_fitnesses, parent_selection_method=0, parent_selection_params=[], survivor_selection_method=0, crossover_prob=0,  bool_store=1)

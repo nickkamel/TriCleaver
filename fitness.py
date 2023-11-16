@@ -1,8 +1,9 @@
 from utility import avg
+import copy
 
 #This functions assigns a score from 0 (no disruption) to 1 (full disruption) to each motif
 #In this case for TC, the motifs are C1, C2, C3, stem1, stem2, stem3. In TS C1, C2, C3 are treated as a single core motif
-def evaluate_rz_activity(bppm, name_to_bases):  
+def evaluate_rz_activity(bppm, name_to_bases):
     #core
     core_scores = list()
     core_score_abs = 0
@@ -23,7 +24,7 @@ def evaluate_rz_activity(bppm, name_to_bases):
     #stems
     stem_scores = list()
     for i in range(1, 4):
-        stem_name     = 's' + str(i)
+        stem_name     = 'S' + str(i)
         stem_base_ids = list(zip(name_to_bases[stem_name + 'A'], name_to_bases[stem_name + 'B'][::-1]))
         stem_score_  = 0
         stem_score_A = 0

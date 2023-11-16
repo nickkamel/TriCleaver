@@ -45,24 +45,21 @@ def coarse_grain_pheno(bppms, map, er_seg_ids, truth_vector, bool_TT):
 
     return t_sppms #This is symmetric since in Vienna, we make the bppm dict symmetric
 
-
 def pheno_perf_fits(input_data): #Operates on a batch of selected individual properties.
-
     tasks, common_data = input_data
-    base_to_seg, name_to_bases, er_seg_ids, dot_dir, truth_vector, bool_300, folding_temp, bool_TT, mismatches = common_data
+    base_to_seg, name_to_bases, er_seg_ids, truth_vector, bool_300, folding_temp, bool_TT, mismatches = common_data
     num_states         = len(truth_vector)
     num_inds_batch     = len(tasks)
-
     logic_tasks        = flatten([task[0] for task in tasks])
     logic_results      = fold(logic_tasks, bool_300, folding_temp, 2) #2 is for 2 strands so it we use cofold
    
     results            = list()   
 
     #Prepare for mismatches calculation. Each individual has mismatches at the same location.
-    obs_base_ids      = name_to_bases['OBS'] #These are 1-indexed and right inclusive
-    obs_lims          = (obs_base_ids[0] , obs_base_ids[-1] + 1) #These are 1-indexed and right exclusive
-    #mismatches gives the indices of the obs mismatches w.r.t. to their local position in obs whereas mismatches_global gives their position w.r.t. the entire strand
-    mismatches_global = [o + obs_lims[0] for o in mismatches] 
+    sensor_base_ids      = name_to_bases['SENSOR'] #These are 1-indexed and right inclusive
+    sensor_lims          = (sensor_base_ids[0] , sensor_base_ids[-1] + 1) #These are 1-indexed and right exclusive
+    #mismatches gives the indices of the sensor mismatches w.r.t. to their local position in sensor whereas mismatches_global gives their position w.r.t. the entire strand
+    mismatches_global = [o + sensor_lims[0] for o in mismatches] 
 
     for ind_idx_batch in range(num_inds_batch):              
         potential_fitnesses = dict()
