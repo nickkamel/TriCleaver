@@ -5,6 +5,7 @@ TriCleaver is a multi-objective evolutionary algorithm that designs switchable r
 ## Requirements
 - Python 3.x
 - Numpy
+- Windows OS
 
 ## Setup
 
@@ -29,5 +30,7 @@ For example
 
 TriCleaver will generate a diverse population of SRzs that cleave the mutant strand of the target TRD, but not the wild-type. The designs are stored in a CSV file named **SRz_designs.csv**. Each row in the file corresponds to a designed SRz and contains the sequence of the SRz.
 
-## Note
-SRz design is computationally intensive; it will take several hours on a multi-core machine.
+## Additional notes
+- SRz design is computationally intensive; it will take several hours on a multi-core machine.
+- This code has been tested on a Windows 10 machine running Python 3.7.9.
+- Installation should only take a few minutes.
