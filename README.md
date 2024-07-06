@@ -12,7 +12,7 @@ The Python packages required for this project are listed in the `requirements.tx
 
 ```bash
 pip install -r requirements.txt
-
+```
 
 ## Setup
 
